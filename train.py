@@ -109,7 +109,7 @@ def corpus(data: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--save_path", type=pathstr, default=pathstr("./datadisk/save_path/test"))
+    parser.add_argument("--save_path", type=pathstr, default=pathstr("./datadisk/save_path/test ETL4,ETL5"))
     parser.add_argument("--stable_diffusion_path", type=pathstr, default=pathstr("~/datadisk/stable-diffusion-v1-5"))
     
     parser.add_argument("--image_size", type=int, default=64)
