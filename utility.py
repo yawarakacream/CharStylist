@@ -12,9 +12,6 @@ def char2code(char):
 def pathstr(t):
     return os.path.expanduser(t)
 
-def pathstr(t):
-    return os.path.expanduser(t)
-
 def save_images(images, path, **kwargs):
     grid = torchvision.utils.make_grid(images, **kwargs)
     image = torchvision.transforms.ToPILImage()(grid)
