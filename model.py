@@ -64,39 +64,33 @@ class Diffusion:
     def sample_timesteps(self, n):
         return torch.randint(low=1, high=self.noise_steps, size=(n,))
 
-    def sampling(self, model, vae, n, char_idx, labels, mix_rate=None, cfg_scale=3):
+    def sampling(self, model, vae, char_idx, labels, mix_rate=None, cfg_scale=3):
         model.eval()
-        tensor_list = []
-        # if mix_rate is not None:
-        #     print('mix rate', mix_rate)
+        
         with torch.no_grad():
+            text_features = torch.stack([torch.tensor([char_idx]) for _ in range(len(labels))]).to(self.device)
             
-            words = [char_idx] * n
-            for word in words:
-                transcript = [word]
-                word_embedding = np.array(transcript, dtype="int64")
-                word_embedding = torch.from_numpy(word_embedding).long()#float()
-                tensor_list.append(word_embedding)
-            text_features = torch.stack(tensor_list)
-            text_features = text_features.to(self.device)
-            
-            x = torch.randn((n, 4, self.image_size // 8, self.image_size // 8)).to(self.device) # vae による次元削減
+            x = torch.randn((len(labels), 4, self.image_size // 8, self.image_size // 8)).to(self.device) # vae による次元削減
             
             for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
-                t = (torch.ones(n) * i).long().to(self.device)
+                t = (torch.ones(len(labels)) * i).long().to(self.device)
                 predicted_noise = model(x, None, t, text_features, labels, mix_rate=mix_rate)
+                
                 if cfg_scale > 0:
                     # uncond_predicted_noise = model(x, t, text_features, sid)
                     # predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
                     uncond_predicted_noise = model(x, None, t, text_features, labels, mix_rate=mix_rate)
                     predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
+                    
                 alpha = self.alpha[t][:, None, None, None]
                 alpha_hat = self.alpha_hat[t][:, None, None, None]
                 beta = self.beta[t][:, None, None, None]
+                
                 if i > 1:
                     noise = torch.randn_like(x)
                 else:
                     noise = torch.zeros_like(x)
+                    
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
                 
         model.train()

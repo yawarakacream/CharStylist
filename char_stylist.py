@@ -103,7 +103,6 @@ class CharStylist:
             num_heads=self.num_heads,
             context_dim=self.dim_char_embedding,
             vocab_size=len(self.char2idx),
-            max_seq_len=1,
         ).to(device)
         
         self.optimizer = optim.AdamW(self.unet.parameters(), lr=self.learning_rate)
@@ -288,7 +287,7 @@ class CharStylist:
         labels = torch.LongTensor([self.writer2idx[w] for w in writers]).to(self.device)
         
         ema_sampled_images = self.diffusion.sampling(
-            self.ema_model, self.vae, n=len(labels), char_idx=char_idx, labels=labels
+            self.ema_model, self.vae, char_idx=char_idx, labels=labels
         )
         
         return ema_sampled_images

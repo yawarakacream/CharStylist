@@ -11,6 +11,10 @@ python train.py
 
 ## サンプリング
 
+```
+python sampling
+```
+
 ## WordStylist のバグ？
 
 - Downsample で呼び出す AvgPool2d の引数が変

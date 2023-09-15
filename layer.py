@@ -425,56 +425,16 @@ class AttentionBlock(nn.Module):
 ##################################################################################
 
 
-# https://github.com/koninik/WordStylist/blob/f18522306e533a01eb823dc4369a4bcb7ea67bcc/unet.py#L688
-class WordAttention(nn.Module):
-    def __init__(self, input_size, hidden_size):
-        super(WordAttention, self).__init__()
-        self.linear_query = nn.Linear(input_size, hidden_size)
-        self.linear_key = nn.Linear(input_size, hidden_size)
-        self.linear_value = nn.Linear(input_size, hidden_size)
-        self.softmax = nn.Softmax(dim=-1)
-        
-    def forward(self, x):
-        # x shape: (batch_size, seq_len, input_size)
-        query = self.linear_query(x)
-        key = self.linear_key(x)
-        value = self.linear_value(x)
-        
-        # Calculate attention scores
-        scores = query @ key.transpose(-2, -1)
-        scores = self.softmax(scores)
-        
-        # Calculate weighted sum of the values
-        word_embedding = scores @ value
-        return word_embedding
-
-
 # https://github.com/koninik/WordStylist/blob/f18522306e533a01eb823dc4369a4bcb7ea67bcc/unet.py#L711
 class CharacterEncoder(nn.Module):
-    def __init__(self, input_size, hidden_size, max_seq_len):
+    def __init__(self, input_size, hidden_size):
         super(CharacterEncoder, self).__init__()
+        
         self.embedding = nn.Embedding(input_size, hidden_size)
-        self.attention = WordAttention(hidden_size, hidden_size)
-
-        self.embedding_dim = hidden_size
-        self.max_seq_len = max_seq_len
-        self.positional_encoding = self.get_positional_encoding()
 
     def forward(self, x):
         # x shape: (batch_size, seq_len)
-        x = self.embedding(x)
-        # Remove positional encoding for ablation study
-        x += self.positional_encoding[:x.size(1), :].to(x.device)
-        word_embedding = self.attention(x)
-        return word_embedding
-    
-    def get_positional_encoding(self):
-        positional_encoding = torch.zeros(self.max_seq_len, self.embedding_dim)
-        for pos in range(self.max_seq_len):
-            for i in range(0, self.embedding_dim, 2):
-                positional_encoding[pos, i] = math.sin(pos / (10000 ** (i / self.embedding_dim)))
-                positional_encoding[pos, i + 1] = math.cos(pos / (10000 ** ((i + 1) / self.embedding_dim)))
-        return positional_encoding
+        return self.embedding(x)
 
 
 ##################################################################################
@@ -539,7 +499,6 @@ class UNetModel(nn.Module):
         vocab_size=256,                  # custom transformer support
         n_embed=None,                     # custom support for prediction of discrete ids into codebook of first stage vq model
         legacy=False,
-        max_seq_len=20,
         interpolation=False,
     ):
         super().__init__()
@@ -585,11 +544,10 @@ class UNetModel(nn.Module):
             nn.Linear(time_embed_dim, time_embed_dim),
         )
         
-        self.max_seq_len = max_seq_len
-        
-        self.word_emb = CharacterEncoder(vocab_size, context_dim, max_seq_len)
+        self.character_encoder = CharacterEncoder(vocab_size, context_dim)
         
         # ==================== INPUT BLOCK ====================
+        
         if self.num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
 
@@ -842,7 +800,7 @@ class UNetModel(nn.Module):
             
         if context is not None:
             # Word embedding
-            context = self.word_emb(context)
+            context = self.character_encoder(context)
         
         h = x.type(self.dtype)
         
