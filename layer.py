@@ -433,7 +433,11 @@ class CharacterEncoder(nn.Module):
         self.embedding = nn.Embedding(input_size, hidden_size)
 
     def forward(self, x):
-        # x shape: (batch_size, seq_len)
+        """
+        :param x: character indices. shape: (batch_size)
+        """
+        
+        x = x.view(x.shape[0], 1) # (batch_size) -> (batch_size, 1)
         return self.embedding(x)
 
 
@@ -763,7 +767,6 @@ class UNetModel(nn.Module):
         :param y: an [N] Tensor of labels, if class-conditional.
         :return: an [N x C x ...] Tensor of outputs.
         """
-        #print('y', y.shape)
         
         assert (y is not None) == (
             self.num_classes is not None

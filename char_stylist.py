@@ -258,9 +258,9 @@ class CharStylist:
             loss_list.append(loss_sum / len(pbar))
 
             if epoch in checkpoint_epochs:
-                for char in test_chars:
-                    images = self.sampling(char, test_writers)
-                    path = os.path.join(self.save_path, "generated", f"test_{char2code(char)}_{str(epoch + 1).zfill(num_epochs_digit)}.jpg")
+                for test_char in test_chars:
+                    images = self.sampling(test_char, test_writers)
+                    path = os.path.join(self.save_path, "generated", f"test_{char2code(test_char)}_{str(epoch + 1).zfill(num_epochs_digit)}.jpg")
                     save_images(images, path)
 
                 torch.save(self.unet.state_dict(), os.path.join(self.save_path, "models", "unet.pt"))
@@ -284,10 +284,10 @@ class CharStylist:
     
     def sampling(self, char, writers):
         char_idx = self.char2idx[char]
-        labels = torch.LongTensor([self.writer2idx[w] for w in writers]).to(self.device)
+        writers_idx = [self.writer2idx[w] for w in writers]
         
         ema_sampled_images = self.diffusion.sampling(
-            self.ema_model, self.vae, char_idx=char_idx, labels=labels
+            self.ema_model, self.vae, char_idx, writers_idx
         )
         
         return ema_sampled_images

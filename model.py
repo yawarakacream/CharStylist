@@ -64,22 +64,25 @@ class Diffusion:
     def sample_timesteps(self, n):
         return torch.randint(low=1, high=self.noise_steps, size=(n,))
 
-    def sampling(self, model, vae, char_idx, labels, mix_rate=None, cfg_scale=3):
+    def sampling(self, model, vae, char_idx, writers_idx, mix_rate=None, cfg_scale=3):
         model.eval()
         
+        n = len(writers_idx)
+        
+        char_idx = torch.LongTensor([char_idx for _ in range(n)]).to(self.device)
+        writers_idx = torch.LongTensor(writers_idx).to(self.device)
+        
         with torch.no_grad():
-            text_features = torch.stack([torch.tensor([char_idx]) for _ in range(len(labels))]).to(self.device)
-            
-            x = torch.randn((len(labels), 4, self.image_size // 8, self.image_size // 8)).to(self.device) # vae による次元削減
+            x = torch.randn((n, 4, self.image_size // 8, self.image_size // 8)).to(self.device) # vae による次元削減
             
             for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
-                t = (torch.ones(len(labels)) * i).long().to(self.device)
-                predicted_noise = model(x, None, t, text_features, labels, mix_rate=mix_rate)
+                t = (torch.ones(n) * i).long().to(self.device)
+                predicted_noise = model(x, None, t, char_idx, writers_idx, mix_rate=mix_rate)
                 
                 if cfg_scale > 0:
-                    # uncond_predicted_noise = model(x, t, text_features, sid)
+                    # uncond_predicted_noise = model(x, t, char_idx, sid)
                     # predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
-                    uncond_predicted_noise = model(x, None, t, text_features, labels, mix_rate=mix_rate)
+                    uncond_predicted_noise = model(x, None, t, char_idx, writers_idx, mix_rate=mix_rate)
                     predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
                     
                 alpha = self.alpha[t][:, None, None, None]

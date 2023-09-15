@@ -22,7 +22,7 @@ class EtlcdbDataset(CSDataset):
         self.transforms = transforms
         
         self.writer_groups = {} # {etlcdb_names: writer[]}
-        self.items = [] # (image_path, word_idxes, writer_idx)
+        self.items = [] # (image_path, char_idx, writer_idx)
         
         for etlcdb_name in etlcdb_names:
             json_path = os.path.join(etlcdb_path, f"{etlcdb_name}.json")
@@ -38,7 +38,7 @@ class EtlcdbDataset(CSDataset):
                 char = item["Character"] # ex) "あ"
                 if char not in char2idx:
                     char2idx[char] = len(char2idx)
-                word = [char2idx[char]]
+                char_idx = char2idx[char]
                 
                 serial_sheet_number = int(item["Serial Sheet Number"]) # ex) 5001
                 writer = f"{etlcdb_name}_{serial_sheet_number}"
@@ -46,29 +46,15 @@ class EtlcdbDataset(CSDataset):
                     writer2idx[writer] = len(writer2idx)
                     self.writer_groups[etlcdb_name].append(writer)
                 
-                # データ拡張した構造
-                if etlcdb_process_type.startswith("+"):
-                    image_dir = image_path[:-len(".png")]
-                    relative_image_paths = list(os.listdir(image_dir))
-                    relative_image_paths.sort()
-                    for relative_image_path in relative_image_paths:
-                        image_path = os.path.join(image_dir, relative_image_path)
-                        self.items.append((image_path, word, writer))
-                
-                # 素の構造
-                else:
-                    self.items.append((image_path, word, writer2idx[writer]))
+                self.items.append((image_path, char_idx, writer2idx[writer]))
     
     def __len__(self):
         return len(self.items)
     
     def __getitem__(self, idx):
-        image_path, word_idxes, writer_idx = self.items[idx]
+        image_path, char_idx, writer_idx = self.items[idx]
         
         image = Image.open(image_path).convert("RGB")
         image = self.transforms(image)
         
-        word_embedding = np.array(word_idxes, dtype="int64")
-        word_embedding = torch.from_numpy(word_embedding).long()
-        
-        return image, word_embedding, writer_idx
+        return image, char_idx, writer_idx
