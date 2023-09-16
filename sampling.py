@@ -38,12 +38,12 @@ def main(
         images = char_stylist.sampling(char, writers)
         
         if grid:
-            image_path = os.path.join(save_path, 'generated', f"{char2code(char)}_writers={','.join(writers)}.jpg")
+            image_path = os.path.join(save_path, 'generated', f"{char2code(char)} writers={','.join(writers)}.jpg")
             sampled_ema = save_images(images, image_path)
         
         else:
             for writer, image in zip(writers, images):
-                image_path = os.path.join(save_path, 'generated', f"{char2code(char)}_writer={writer}.png")
+                image_path = os.path.join(save_path, 'generated', f"{char2code(char)} writer={writer}.png")
                 sampled_ema = save_single_image(image, image_path)
 
 
