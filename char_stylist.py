@@ -224,7 +224,7 @@ class CharStylist:
             loss_sum = 0
 
             pbar = tqdm(data_loader, desc=f"{epoch=}")
-            for i, (images, char_idx, writer_idx) in enumerate(pbar):
+            for i, (images, chars_idx, writers_idx) in enumerate(pbar):
                 images = images.to(self.device)
                 original_images = images
                 
@@ -232,8 +232,8 @@ class CharStylist:
                 images = images * 0.18215
                 latents = images
                 
-                char_idx = char_idx.to(self.device)
-                writer_idx = writer_idx.to(self.device)
+                chars_idx = chars_idx.to(self.device)
+                writers_idx = writers_idx.to(self.device)
 
                 t = self.diffusion.sample_timesteps(images.shape[0]).to(self.device)
                 x_t, noise = self.diffusion.noise_images(images, t)
@@ -242,10 +242,11 @@ class CharStylist:
                     labels = None
 
                 predicted_noise = self.unet(
-                    x_t, original_images=original_images, timesteps=t, context=char_idx, y=writer_idx, or_images=None
+                    x_t, original_images=original_images, timesteps=t, context=chars_idx, y=writers_idx, or_images=None
                 )
 
                 loss = mse_loss(noise, predicted_noise)
+
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
