@@ -25,6 +25,8 @@ def main(
     diffusion_beta_start,
     diffusion_beta_end,
     
+    diversity_lambda,
+    
     batch_size,
     epochs,
     num_workers,
@@ -80,6 +82,8 @@ def main(
         diffusion_beta_start,
         diffusion_beta_end,
         
+        diversity_lambda,
+        
         device,
     )
     print("initialized")
@@ -123,6 +127,8 @@ if __name__ == "__main__":
     parser.add_argument("--diffusion_beta_start", type=float, default=0.0001)
     parser.add_argument("--diffusion_beta_end", type=float, default=0.02)
     
+    parser.add_argument("--diversity_lambda", type=float, default=0.0001)
+    
     parser.add_argument("--batch_size", type=int, default=224)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--num_workers", type=int, default=4)
@@ -154,6 +160,8 @@ if __name__ == "__main__":
         args.diffusion_noise_steps,
         args.diffusion_beta_start,
         args.diffusion_beta_end,
+        
+        args.diversity_lambda,
         
         args.batch_size,
         args.epochs,

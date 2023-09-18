@@ -43,6 +43,8 @@ class CharStylist:
         diffusion_beta_start,
         diffusion_beta_end,
         
+        diversity_lambda,
+        
         device,
     ):
         self.device = device
@@ -74,6 +76,8 @@ class CharStylist:
         self.diffusion_beta_start = diffusion_beta_start
         self.diffusion_beta_end = diffusion_beta_end
         
+        self.diversity_lambda = diversity_lambda
+        
         with open(os.path.join(self.save_path, "model_info.json"), "w") as f:
             info = {
                 "image_size": self.image_size,
@@ -86,6 +90,8 @@ class CharStylist:
                 "diffusion_noise_steps": self.diffusion_noise_steps,
                 "diffusion_beta_start": self.diffusion_beta_start,
                 "diffusion_beta_end": self.diffusion_beta_end,
+                
+                "diversity_lambda": self.diversity_lambda,
             }
             json.dump(info, f)
         
@@ -149,6 +155,8 @@ class CharStylist:
             diffusion_noise_steps = model_info["diffusion_noise_steps"]
             diffusion_beta_start = model_info["diffusion_beta_start"]
             diffusion_beta_end = model_info["diffusion_beta_end"]
+            
+            diversity_lambda = model_info["diversity_lambda"]
         
         instance = CharStylist(
             save_path,
@@ -167,6 +175,8 @@ class CharStylist:
             diffusion_noise_steps,
             diffusion_beta_start,
             diffusion_beta_end,
+            
+            diversity_lambda,
 
             device,
         )
@@ -246,7 +256,15 @@ class CharStylist:
                 )
 
                 loss = mse_loss(noise, predicted_noise)
-
+                
+                # L_div
+                perm0 = np.random.permutation(images.shape[0])
+                perm1 = np.random.permutation(images.shape[0])
+                for i, j in zip(perm0, perm1):
+                    if i == j:
+                        continue
+                    loss -= self.diversity_lambda * nn.functional.l1_loss(predicted_noise[i], predicted_noise[j]) / nn.functional.l1_loss(images[i], images[j])
+                
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()

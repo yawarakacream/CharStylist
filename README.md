@@ -15,6 +15,18 @@ python train.py
 python sampling
 ```
 
+```
+python sheet_sampling
+```
+
+## WordStylist からの変更点
+
+- 位置埋め込みを削除
+- 損失換数に $`L_div`$ のようなものを追加（最大化する）
+  
+  Zeng+, [Diversity Regularized StarGAN for Multi-style Fonts Generation of Chinese Characters]((https://iopscience.iop.org/article/10.1088/1742-6596/1880/1/012017/pdf)), J. Phys.: Conf. Ser. 1880 012017, 2021.  
+  $$\mathcal{L}_{div}(G) = \mathbb{E}_{x, x', c} \left[ \| G(x, c) - G(x', c) \|_1 / \| x - x' \|_1 \right]$$
+
 ## WordStylist のバグ？
 
 - Downsample で呼び出す AvgPool2d の引数が変
